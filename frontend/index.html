@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>WeldBot — Vulcan OmniPro 220</title>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #f5f5f0;
+  --surface:  #ffffff;
+  --card:     #eeeee8;
+  --border:   #d0d0c8;
+  --accent:   #b04000;
+  --accent-l: #c45200;
+  --text:     #2a2a2a;
+  --text-hi:  #111111;
+  --muted:    #808078;
+  --code-bg:  #e8e8e2;
+  --red:      #a02020;
+  --green:    #2e6e2e;
+  --mono:     'Cascadia Code', 'Consolas', 'SF Mono', 'Fira Code', monospace;
+  --sans:     'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+html, body { height: 100%; font-family: var(--sans); }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.header-mark {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 4px 10px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.header-title {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-hi);
+  letter-spacing: .5px;
+}
+.header-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.status-indicator {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-dot {
+  width: 6px; height: 6px;
+  background: var(--green);
+}
+#new-chat-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all .12s;
+}
+#new-chat-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Health bar ── */
+#health-bar {
+  display: none;
+  padding: 5px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+#health-bar.warn { color: var(--red); border-bottom-color: var(--red); }
+#health-bar.ok { color: var(--green); }
+
+/* ── Quick actions ── */
+#quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.qa-btn {
+  background: none;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--muted);
+  padding: 8px 16px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .12s;
+  white-space: nowrap;
+}
+.qa-btn:last-child { border-right: none; }
+.qa-btn:hover { color: var(--accent); background: rgba(176,64,0,.05); }
+
+/* ── Chat area ── */
+#chat-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+#chat-container::-webkit-scrollbar { width: 4px; }
+#chat-container::-webkit-scrollbar-track { background: transparent; }
+#chat-container::-webkit-scrollbar-thumb { background: var(--border); }
+
+.message-wrapper {
+  display: flex;
+  padding: 16px 24px;
+  gap: 16px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+}
+
+.msg-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  width: 64px;
+  padding-top: 2px;
+}
+.msg-label.user { color: var(--muted); }
+.msg-label.bot { color: var(--accent); }
+
+.msg-body {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.7;
+  font-size: 14px;
+}
+.msg-body.user-text { color: var(--text-hi); }
+
+/* ── Welcome screen ── */
+#welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  height: 100%;
+  padding: 60px 24px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+}
+#welcome .doc-id {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+#welcome h2 {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-hi);
+  letter-spacing: -.5px;
+  margin-bottom: 8px;
+}
+#welcome .subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 560px;
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+.welcome-sep {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 24px;
+}
+.welcome-section-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.welcome-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  width: 100%;
+  max-width: 640px;
+  border: 1px solid var(--border);
+}
+.welcome-item {
+  padding: 14px 18px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .12s;
+}
+.welcome-item:nth-child(even) { border-right: none; }
+.welcome-item:nth-last-child(-n+2) { border-bottom: none; }
+.welcome-item:hover { background: rgba(176,64,0,.04); }
+.welcome-item .item-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.welcome-item .item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-hi);
+  margin-bottom: 3px;
+}
+.welcome-item .item-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* ── Typing indicator ── */
+.typing-indicator {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 0;
+}
+.typing-indicator span {
+  width: 4px; height: 14px;
+  background: var(--accent);
+  opacity: .4;
+  animation: blink .8s infinite alternate;
+}
+.typing-indicator span:nth-child(2) { animation-delay: .15s; }
+.typing-indicator span:nth-child(3) { animation-delay: .3s; }
+@keyframes blink {
+  from { opacity: .2; }
+  to   { opacity: .7; }
+}
+
+/* ── Bot content (markdown) ── */
+.bot-content h1, .bot-content h2 {
+  font-family: var(--mono);
+  color: var(--text-hi);
+  margin: 20px 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+.bot-content h3 {
+  font-family: var(--mono);
+  color: var(--accent-l);
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.bot-content p { margin-bottom: 10px; }
+.bot-content p:last-child { margin-bottom: 0; }
+.bot-content ul, .bot-content ol { margin: 8px 0 10px 20px; }
+.bot-content li { margin-bottom: 4px; }
+.bot-content strong { color: var(--text-hi); font-weight: 600; }
+.bot-content em { color: #999; }
+.bot-content code {
+  background: var(--code-bg);
+  color: #5a5a50;
+  padding: 1px 4px;
+  font-size: 12.5px;
+  font-family: var(--mono);
+  border: 1px solid var(--border);
+}
+.bot-content pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  padding: 14px;
+  overflow-x: auto;
+  margin: 10px 0;
+  font-size: 12.5px;
+  font-family: var(--mono);
+}
+.bot-content pre code { background: none; padding: 0; border: none; color: #3a3a32; }
+
+/* ── Tables ── */
+.bot-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 12px;
+}
+.bot-content th {
+  background: var(--card);
+  color: var(--text-hi);
+  padding: 8px 12px;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+}
+.bot-content td {
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+}
+.bot-content tr:hover td { background: rgba(176,64,0,.04); }
+
+/* ── SVG container ── */
+.svg-container {
+  margin: 14px 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: inline-block;
+  width: 100%;
+}
+.svg-container svg { display: block; width: 100%; height: auto; }
+
+/* ── Mermaid container ── */
+.mermaid-container {
+  margin: 14px 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 16px;
+  overflow-x: auto;
+}
+.mermaid-container svg { max-width: 100%; }
+
+/* ── HTML table container ── */
+.html-container {
+  margin: 14px 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+/* ── Manual page images ── */
+.manual-image-container {
+  margin: 14px 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  position: relative;
+}
+.manual-image-container img {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: pointer;
+  transition: opacity .12s;
+}
+.manual-image-container img:hover { opacity: .92; }
+.manual-image-label {
+  position: absolute;
+  top: 0; right: 0;
+  background: var(--accent);
+  color: #fff;
+  padding: 3px 10px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+
+/* ── Input area ── */
+#input-area {
+  padding: 12px 24px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  max-width: 960px;
+  margin: 0 auto;
+}
+#image-preview {
+  display: none;
+  position: relative;
+  margin-bottom: 8px;
+  max-width: 960px;
+  margin-left: auto; margin-right: auto;
+}
+#image-preview img {
+  max-height: 100px;
+  border: 1px solid var(--accent);
+  display: block;
+}
+#remove-image {
+  position: absolute; top: -4px; right: -4px;
+  width: 18px; height: 18px;
+  background: var(--red); color: #fff;
+  border: none; cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.input-btn {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  transition: all .12s;
+  flex-shrink: 0;
+}
+.input-btn:hover { border-color: var(--accent); color: var(--accent); }
+#msg-input {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 9px 14px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: var(--sans);
+  resize: none;
+  min-height: 38px;
+  max-height: 140px;
+  outline: none;
+  transition: border-color .12s;
+  line-height: 1.5;
+}
+#msg-input:focus { border-color: var(--accent); }
+#msg-input::placeholder { color: var(--muted); }
+#send-btn {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  transition: opacity .12s;
+}
+#send-btn:hover { opacity: .85; }
+#send-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+.hint {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: .5px;
+  text-align: center;
+  margin-top: 6px;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── Retry button ── */
+.retry-btn {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 4px 14px;
+  background: none;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  transition: all .12s;
+}
+.retry-btn:hover { background: rgba(176,64,0,.08); }
+
+/* ── Stream interrupted ── */
+.stream-interrupted {
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-left: 2px solid var(--red);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--red);
+}
+
+/* ── Error toast ── */
+#toast {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--red);
+  color: #fff;
+  padding: 8px 18px;
+  font-family: var(--mono);
+  font-size: 11px;
+  display: none;
+  z-index: 999;
+}
+
+/* ── Upload drop overlay ── */
+body.dragover::after {
+  content: "DROP IMAGE TO ANALYZE";
+  position: fixed; inset: 0;
+  background: rgba(176,64,0,.06);
+  border: 2px dashed var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--accent);
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* ── Lightbox ── */
+#lightbox {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+#lightbox.active { display: flex; }
+#lightbox img {
+  max-width: 92vw;
+  max-height: 92vh;
+  box-shadow: 0 4px 30px rgba(0,0,0,.6);
+}
+
+@media (max-width: 640px) {
+  .welcome-grid { grid-template-columns: 1fr; }
+  .welcome-item { border-right: none !important; }
+  .welcome-item:last-child { border-bottom: none; }
+  .msg-body { font-size: 13px; }
+  .msg-label { width: 48px; font-size: 9px; }
+  #quick-actions { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-mark">WB</div>
+  <div>
+    <div class="header-title">Vulcan OmniPro 220</div>
+    <div class="header-sub">Multimodal Technical Assistant</div>
+  </div>
+  <div class="header-right">
+    <div class="status-indicator">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Ready</span>
+    </div>
+    <button id="new-chat-btn" onclick="newChat()">New Chat</button>
+  </div>
+</header>
+
+<div id="health-bar"></div>
+
+<div id="quick-actions">
+  <button class="qa-btn" onclick="quickAsk('Show me the polarity setup for MIG welding')">1.1 MIG Polarity</button>
+  <button class="qa-btn" onclick="quickAsk('Show me the polarity setup for flux-cored welding')">1.2 Flux-Core Polarity</button>
+  <button class="qa-btn" onclick="quickAsk('What are the duty cycles at different amperages on 240V?')">2.1 Duty Cycle</button>
+  <button class="qa-btn" onclick="quickAsk('My welds have a lot of porosity — how do I fix it?')">3.1 Fix Porosity</button>
+  <button class="qa-btn" onclick="quickAsk('How do I set up the wire feed mechanism?')">4.1 Wire Feed</button>
+  <button class="qa-btn" onclick="quickAsk('Which welding process should I use for 1/4 inch mild steel?')">5.1 Process Select</button>
+  <button class="qa-btn" onclick="quickAsk('What settings for welding 16 gauge sheet metal on 120V?')">6.1 Sheet Metal</button>
+  <button class="qa-btn" onclick="quickAsk('How do I set up for TIG welding on this machine?')">7.1 TIG Setup</button>
+</div>
+
+<div id="chat-container">
+  <div id="welcome">
+    <div class="doc-id">Document Reference WB-220-01</div>
+    <h2>Vulcan OmniPro 220 Technical Assistant</h2>
+    <p class="subtitle">Access the complete owner's manual, quick-start guide, and process selection chart. Ask about settings, polarity, duty cycles, troubleshooting, or upload a weld photo for diagnosis.</p>
+    <div class="welcome-sep"></div>
+    <div class="welcome-section-title">Quick Reference</div>
+    <div class="welcome-grid">
+      <div class="welcome-item" onclick="quickAsk('Show me the polarity wiring diagram for all four welding processes')">
+        <div class="item-num">SEC. 1</div>
+        <div class="item-title">Polarity Diagrams</div>
+        <div class="item-desc">Wiring setups for MIG, Flux-Core, TIG, and Stick</div>
+      </div>
+      <div class="welcome-item" onclick="quickAsk('Show me the complete duty cycle table for 120V and 240V')">
+        <div class="item-num">SEC. 2</div>
+        <div class="item-title">Duty Cycle Tables</div>
+        <div class="item-desc">Weld time at each amperage setting</div>
+      </div>
+      <div class="welcome-item" onclick="quickAsk('My weld has excess spatter everywhere — troubleshoot this for me')">
+        <div class="item-num">SEC. 3</div>
+        <div class="item-title">Troubleshoot Defects</div>
+        <div class="item-desc">Porosity, spatter, burn-through, and more</div>
+      </div>
+      <div class="welcome-item" onclick="quickAsk('I have a 1/8 inch steel plate — what process, settings, and polarity should I use?')">
+        <div class="item-num">SEC. 4</div>
+        <div class="item-title">Settings Wizard</div>
+        <div class="item-desc">Recommended settings for any material</div>
+      </div>
+    </div>
+  </div>
+  <div id="messages"></div>
+</div>
+
+<div id="image-preview">
+  <img id="preview-img" src="" alt="Upload"/>
+  <button id="remove-image" onclick="removeImage()">X</button>
+</div>
+
+<div id="input-area">
+  <div class="input-row">
+    <button class="input-btn" onclick="document.getElementById('file-input').click()" title="Attach image">Attach</button>
+    <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleImageSelect(event)"/>
+    <textarea
+      id="msg-input"
+      rows="1"
+      placeholder="Describe your question or problem..."
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button id="send-btn" onclick="sendMessage()">Send</button>
+  </div>
+  <div class="hint">Enter to send &middot; Shift+Enter for new line &middot; Drag an image anywhere to analyze</div>
+</div>
+
+<div id="toast"></div>
+
+<div id="lightbox" onclick="this.classList.remove('active')">
+  <img id="lightbox-img" src="" alt="Manual page"/>
+</div>
+
+<script>
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  themeVariables: {
+    background: '#ffffff',
+    primaryColor: '#eeeee8',
+    primaryTextColor: '#2a2a2a',
+    primaryBorderColor: '#b04000',
+    lineColor: '#b04000',
+    secondaryColor: '#f5f5f0',
+    tertiaryColor: '#eeeee8',
+    edgeLabelBackground: '#ffffff',
+    clusterBkg: '#eeeee8',
+    titleColor: '#b04000',
+    nodeTextColor: '#2a2a2a',
+  },
+  flowchart: { curve: 'basis', padding: 20 },
+});
+
+const SESSION_ID = 'session_' + Math.random().toString(36).slice(2, 10);
+let pendingImage = null;
+let isStreaming  = false;
+let mermaidId    = 0;
+let lastRequest  = null;
+
+function $(id) { return document.getElementById(id); }
+
+function showToast(msg, duration = 4000) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, duration);
+}
+
+function setStatus(text, active) {
+  $('status-text').textContent = text;
+  $('status-dot').style.background = active ? 'var(--accent)' : 'var(--green)';
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function quickAsk(q) {
+  $('msg-input').value = q;
+  sendMessage();
+}
+
+function newChat() {
+  fetch(`/session/${SESSION_ID}`, { method: 'DELETE' });
+  $('messages').innerHTML = '';
+  $('welcome').style.display = 'flex';
+  removeImage();
+}
+
+function handleImageSelect(e) {
+  const file = e.target.files[0];
+  if (file) loadImageFile(file);
+  e.target.value = '';
+}
+
+function loadImageFile(file) {
+  if (!file.type.startsWith('image/')) { showToast('Select an image file'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    pendingImage = { data: dataUrl.split(',')[1], type: file.type };
+    $('preview-img').src = dataUrl;
+    $('image-preview').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  pendingImage = null;
+  $('image-preview').style.display = 'none';
+  $('preview-img').src = '';
+}
+
+document.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('dragover'); });
+document.addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('dragover'); });
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  document.body.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImageFile(file);
+});
+
+// ── Rendering ────────────────────────────────────────────────────────────
+
+function parseBlocks(text) {
+  const segments = [];
+  const re = /```(svg|mermaid|html)([\s\S]*?)```/gi;
+  let last = 0, m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) segments.push({ type: 'md', content: text.slice(last, m.index) });
+    segments.push({ type: m[1].toLowerCase(), content: m[2].trim() });
+    last = re.lastIndex;
+  }
+  if (last < text.length) segments.push({ type: 'md', content: text.slice(last) });
+  return segments;
+}
+
+function renderMD(md) {
+  const renderer = new marked.Renderer();
+  renderer.image = function({ href, title, text }) {
+    if (href && href.startsWith('/manual-image/')) {
+      const parts = href.split('/');
+      const manualName = parts[2] || '';
+      const pageNum = parts[3] || '';
+      const label = manualName.replace(/-/g, ' ') + ' p.' + pageNum;
+      return '<div class="manual-image-container">' +
+        '<span class="manual-image-label">' + label + '</span>' +
+        '<img src="' + href + '" alt="' + (text||'') + '" title="' + (title||text||'') + '"' +
+        ' onclick="openLightbox(this.src)" loading="lazy"/>' +
+        '</div>';
+    }
+    return '<img src="' + href + '" alt="' + (text||'') + '" style="max-width:100%"/>';
+  };
+  return marked.parse(md, { gfm: true, breaks: true, renderer });
+}
+
+function openLightbox(src) {
+  $('lightbox-img').src = src;
+  $('lightbox').classList.add('active');
+}
+
+async function renderSegment(seg) {
+  if (seg.type === 'md') {
+    const div = document.createElement('div');
+    div.className = 'bot-content';
+    div.innerHTML = renderMD(seg.content);
+    return div;
+  }
+  if (seg.type === 'svg') {
+    const wrap = document.createElement('div');
+    wrap.className = 'svg-container';
+    wrap.innerHTML = seg.content;
+    return wrap;
+  }
+  if (seg.type === 'mermaid') {
+    const wrap = document.createElement('div');
+    wrap.className = 'mermaid-container';
+    const id = 'mermaid-' + (++mermaidId);
+    try {
+      const { svg } = await mermaid.render(id, seg.content);
+      wrap.innerHTML = svg;
+    } catch {
+      const pre = document.createElement('pre');
+      pre.textContent = seg.content;
+      wrap.appendChild(pre);
+    }
+    return wrap;
+  }
+  if (seg.type === 'html') {
+    const wrap = document.createElement('div');
+    wrap.className = 'html-container';
+    wrap.innerHTML = seg.content;
+    return wrap;
+  }
+}
+
+async function renderBotMessage(text, container) {
+  container.innerHTML = '';
+  const segments = parseBlocks(text);
+  for (const seg of segments) {
+    const el = await renderSegment(seg);
+    if (el) container.appendChild(el);
+  }
+}
+
+// ── Messages ─────────────────────────────────────────────────────────────
+
+function addUserMessage(text, imageDataUrl) {
+  $('welcome').style.display = 'none';
+  const wrap = document.createElement('div');
+  wrap.className = 'message-wrapper';
+
+  const label = document.createElement('div');
+  label.className = 'msg-label user';
+  label.textContent = 'You';
+
+  const body = document.createElement('div');
+  body.className = 'msg-body user-text';
+
+  if (imageDataUrl) {
+    const img = document.createElement('img');
+    img.src = imageDataUrl;
+    img.style.cssText = 'max-width:100%;max-height:180px;display:block;margin-bottom:8px;border:1px solid var(--border)';
+    body.appendChild(img);
+  }
+
+  const p = document.createElement('p');
+  p.textContent = text;
+  body.appendChild(p);
+
+  wrap.appendChild(label);
+  wrap.appendChild(body);
+  $('messages').appendChild(wrap);
+  scrollBottom();
+}
+
+function addBotMessage() {
+  const wrap = document.createElement('div');
+  wrap.className = 'message-wrapper';
+
+  const label = document.createElement('div');
+  label.className = 'msg-label bot';
+  label.textContent = 'System';
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+
+  const indicator = document.createElement('div');
+  indicator.className = 'typing-indicator';
+  indicator.id = 'typing';
+  indicator.innerHTML = '<span></span><span></span><span></span>';
+
+  const content = document.createElement('div');
+  content.id = 'streaming-content';
+  content.style.display = 'none';
+
+  body.appendChild(indicator);
+  body.appendChild(content);
+  wrap.appendChild(label);
+  wrap.appendChild(body);
+  $('messages').appendChild(wrap);
+  scrollBottom();
+
+  return { body, content, indicator };
+}
+
+function scrollBottom() {
+  const c = $('chat-container');
+  c.scrollTop = c.scrollHeight;
+}
+
+// ── Send / Retry ─────────────────────────────────────────────────────────
+
+async function sendMessage() {
+  if (isStreaming) return;
+  const input = $('msg-input');
+  const text  = input.value.trim();
+  if (!text && !pendingImage) return;
+
+  const displayText  = text || 'Please analyze this weld photo';
+  const imageDataUrl = pendingImage ? $('preview-img').src : null;
+  const imageData    = pendingImage ? pendingImage.data : null;
+  const imageType    = pendingImage ? pendingImage.type : null;
+
+  input.value = '';
+  input.style.height = 'auto';
+  removeImage();
+
+  addUserMessage(displayText, imageDataUrl);
+
+  lastRequest = {
+    message: displayText,
+    session_id: SESSION_ID,
+    image: imageData,
+    image_media_type: imageType,
+  };
+
+  await streamBotResponse(lastRequest);
+}
+
+async function retryLastMessage() {
+  if (!lastRequest || isStreaming) return;
+  const msgs = $('messages');
+  const lastWrapper = msgs.lastElementChild;
+  if (lastWrapper) lastWrapper.remove();
+  await streamBotResponse(lastRequest);
+}
+
+async function streamBotResponse(reqBody) {
+  const { content, indicator } = addBotMessage();
+
+  isStreaming = true;
+  $('send-btn').disabled = true;
+  setStatus('Processing', true);
+
+  let rawResponse = '';
+  let gotDone = false;
+
+  try {
+    const res = await fetch('/chat', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody),
+    });
+
+    if (!res.ok) {
+      throw new Error(res.status === 400 ? 'Message too long' : 'HTTP ' + res.status);
+    }
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let   buffer  = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let payload;
+        try { payload = JSON.parse(line.slice(6)); }
+        catch { continue; }
+
+        if (payload.text) {
+          rawResponse += payload.text;
+          indicator.style.display = 'none';
+          content.style.display   = 'block';
+          content.textContent     = rawResponse;
+          scrollBottom();
+        }
+
+        if (payload.done) {
+          gotDone = true;
+          setStatus('Rendering', true);
+          await renderBotMessage(rawResponse, content);
+          scrollBottom();
+        }
+
+        if (payload.error) {
+          indicator.style.display = 'none';
+          content.style.display   = 'block';
+          content.innerHTML = 'ERROR: ' + payload.error;
+          addRetryBtn(content);
+          showToast(payload.error);
+        }
+      }
+    }
+
+    if (!gotDone && rawResponse.length > 0) {
+      setStatus('Rendering', true);
+      await renderBotMessage(rawResponse, content);
+      const notice = document.createElement('div');
+      notice.className = 'stream-interrupted';
+      notice.textContent = 'Stream interrupted — partial response shown';
+      content.appendChild(notice);
+      addRetryBtn(content);
+      scrollBottom();
+    } else if (!gotDone && rawResponse.length === 0) {
+      indicator.style.display = 'none';
+      content.style.display   = 'block';
+      content.textContent = 'No response received';
+      addRetryBtn(content);
+    }
+
+  } catch (err) {
+    indicator.style.display = 'none';
+    content.style.display   = 'block';
+    content.textContent = 'Connection error — is the backend running?';
+    addRetryBtn(content);
+    showToast('Connection failed: ' + err.message);
+  } finally {
+    isStreaming = false;
+    $('send-btn').disabled = false;
+    setStatus('Ready', false);
+  }
+}
+
+function addRetryBtn(container) {
+  const btn = document.createElement('button');
+  btn.className = 'retry-btn';
+  btn.textContent = 'Retry';
+  btn.onclick = () => retryLastMessage();
+  container.appendChild(btn);
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+
+window.addEventListener('load', async () => {
+  $('msg-input').focus();
+  try {
+    const res = await fetch('/health');
+    const data = await res.json();
+    const bar = $('health-bar');
+    if (data.manuals_loaded === 0) {
+      bar.textContent = 'WARNING: No manuals loaded. Check the files/ directory.';
+      bar.className = 'warn';
+      bar.style.display = 'block';
+    } else {
+      bar.textContent = data.manuals_loaded + ' manual(s) loaded / ' + data.total_pages + ' pages indexed';
+      bar.className = 'ok';
+      bar.style.display = 'block';
+      setTimeout(() => { bar.style.display = 'none'; }, 4000);
+    }
+  } catch {
+    const bar = $('health-bar');
+    bar.textContent = 'WARNING: Cannot reach backend.';
+    bar.className = 'warn';
+    bar.style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>
